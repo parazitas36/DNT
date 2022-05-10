@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plot
 from sklearn.linear_model import LinearRegression
 
-n = 2 # Order number
+n = 10 # Order number
 model = LinearRegression()
 
 class SunSpot:

@@ -4,7 +4,7 @@ from sklearn.linear_model import LinearRegression
 
 lr = 0.0000001 # Learning rate
 iterMax = 10000 # Iterations count
-n = 2 # Order number
+n = 10 # Order number
 TARGET_MSE = 150 # MSE Goal
 
 model = LinearRegression()
@@ -30,23 +30,29 @@ class AdaptiveLinearNeuron(object):
         self.cost = []
     
     def fit(self, X, y):
-        # fills wieghts with zeroes
+        # fills weights with zeroes
         self.weights = np.zeros(1 + X.shape[1])
+        print("Weights before training", self.weights)
 
+        print("MSE Goal:", TARGET_MSE)
         MSE = 0
+        MAD = 0
         for i in range(self.niter):
             output = self.net_input(X)
             errors = y - output
             MSE = get_MSE(errors)
-            print("Epoch: %d MSE:%f"%(i, MSE))
+            MAD = get_MAD(errors)
+            if i % (iterMax/10) == 0:
+                print("Iteration #%d MSE:%f"%(i, MSE))
             if MSE <= TARGET_MSE:
                 print("MSE Goal achieved in the epoch: %d with the MSE: %f"%(i, MSE))
+                print("MAD:", MAD)
                 return self
             self.weights[1:] += self.rate * X.T.dot(errors)
             self.weights[0] += self.rate * errors.sum()
             cost = (errors**2).sum() / 2.0
             self.cost.append(cost)
-        print("MSE Goal not achieved. Last MSE: %f"%MSE)
+        print("MSE Goal not achieved. Last MSE: %f Last MDE: %f"%(MSE, MAD))
         return self
 
     def net_input(self, X):
@@ -135,7 +141,7 @@ def get_MSE(errors):
 def get_MAD(errors):
     MAD = np.abs(errors)
     MAD = np.median(MAD)
-    print("MAD:", MAD)
+    return MAD
 
 # Splits data into learning and testing data collections
 def splitData(data):
@@ -190,31 +196,26 @@ def main():
     Tv = T[0:n, 200:]
 
     fit_model(Pu, Tu)
-    r_sq, bias, weights = get_results(Pu, Tu)
-
-    print('R^2:', r_sq)
-    print('bias:', bias)
-    print('weights:', weights)
 
     # Predictions with learning data
     Tsu = predict(Pu)
     Tsu = np.matrix(Tsu)
     Tsu = Tsu.T
     x_years = [sunSpots[i].year for i in range(n, 200+n)]
-    #draw_comparison(Tu,Tsu, x_years)
+    draw_comparison(Tu,Tsu, x_years)
 
     # Predictions with verification data
     Tsu = predict(Pv)
     Tsu = np.matrix(Tsu)
     Tsu = Tsu.T
     x_years = [sunSpots[i].year for i in range(200+n, len(sunSpots))]
-    #draw_comparison(Tv,Tsu, x_years)
+    draw_comparison(Tv,Tsu, x_years)
 
     Tsu = predict(P)
     Tsu = np.matrix(Tsu)
     Tsu = Tsu.T
     x_years = [sunSpots[i].year for i in range(n, len(sunSpots))]
-    #errors = error_vector(T, Tsu, x_years)
+    errors = error_vector(T, Tsu, x_years)
     #get_MSE(errors)
     #get_MAD(errors)
     
@@ -224,8 +225,8 @@ def main():
     neuron = AdaptiveLinearNeuron(lr, iterMax).fit(Pu, Tu)
     print(neuron.weights)
     predictions = neuron.activation(Pu)
-    for i in range(len(predictions)):
-        print("Actual: %d Predicted: %d"%(Tu[i], predictions[i]))
+    #for i in range(len(predictions)):
+        #print("Actual: %d Predicted: %d"%(Tu[i], predictions[i]))
 
 if __name__ == "__main__":
     main()
